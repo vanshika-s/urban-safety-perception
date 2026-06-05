@@ -13,7 +13,7 @@ from xgboost import XGBClassifier
 import requests
 
 st.set_page_config(
-    page_title="Urban Safety Perception — San Diego",
+    page_title="Urban Safety Perception - San Diego",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -27,10 +27,31 @@ html, body, [class*="css"], p, div, span, label, input {
 .stApp { background-color: #ffffff; }
 h1,h2,h3,h4 { font-family:'Inter',sans-serif !important; color:#1a2e4a; font-weight:600; }
 #MainMenu {visibility:hidden;} footer {visibility:hidden;} header {visibility:hidden;}
-.block-container { padding-top:1.5rem !important; padding-bottom:0 !important; max-width:100% !important; }
 
-/* Remove ALL Streamlit container borders/backgrounds */
-[data-testid="column"] > div > div > div > div { background:transparent !important; }
+/* Remove ALL box artifacts */
+.block-container {
+    padding-top: 0.8rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-bottom: 0 !important;
+    max-width: 100% !important;
+}
+[data-testid="column"] { background: transparent !important; }
+[data-testid="stVerticalBlock"] { background: transparent !important; }
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+section.main > div { background: transparent !important; }
+/* Fix left column background */
+[data-testid="stVerticalBlock"] > [data-testid="stVerticalBlockBorderWrapper"] > div {
+    background: transparent !important;
+}
+div[class*="stColumn"] > div {
+    background: transparent !important;
+    border: none !important;
+}
 
 /* Landing */
 .l-title { font-size:2.5rem; font-weight:700; color:#1a2e4a; text-align:center; margin-bottom:0.3rem; }
@@ -39,15 +60,25 @@ h1,h2,h3,h4 { font-family:'Inter',sans-serif !important; color:#1a2e4a; font-wei
     background:#f7f9fc; border:1px solid #e2e8f0; border-radius:14px;
     padding:1.6rem 2rem; max-width:560px; width:100%; margin:1.5rem auto 0 auto;
 }
-.mrow { display:flex; gap:0.75rem; padding:0.45rem 0; border-bottom:1px solid #edf0f4; font-size:0.9rem; color:#4a5568; align-items:center; }
+.mrow {
+    display:flex; gap:0.75rem; padding:0.45rem 0;
+    border-bottom:1px solid #edf0f4; font-size:0.9rem;
+    color:#4a5568; align-items:center;
+}
 .mrow:last-child { border-bottom:none; }
 .mlbl { font-weight:600; color:#1a2e4a; min-width:80px; }
 .l-link { color:#3a7abf; text-decoration:none; font-weight:500; }
-.l-about { max-width:560px; width:100%; margin:1.2rem auto 0 auto; font-size:0.88rem; color:#6c7a8d; line-height:1.8; text-align:center; }
+.l-about {
+    max-width:560px; width:100%; margin:1.2rem auto 0 auto;
+    font-size:0.88rem; color:#6c7a8d; line-height:1.8; text-align:center;
+}
 
-/* Left panel — NO box, just background color on the column */
-.panel-wrap { background:#ddeeff; border-radius:12px; padding:1.2rem; height:100%; }
-.panel-title { font-size:1.05rem; font-weight:700; color:#1a2e4a; margin-bottom:0; }
+/* Left panel */
+.panel-wrap {
+    background:#ddeeff; border-radius:12px;
+    padding:1.2rem; min-height:600px;
+}
+.panel-title { font-size:1.6rem; font-weight:700; color:#1a2e4a; margin-bottom:0; }
 .divider { border:none; border-top:1px solid #c8dff0; margin:0.8rem 0; }
 .result-safe {
     background:#d4edda; border-left:4px solid #28a745; border-radius:8px;
@@ -58,7 +89,10 @@ h1,h2,h3,h4 { font-family:'Inter',sans-serif !important; color:#1a2e4a; font-wei
     padding:12px 14px; color:#721c24; font-weight:700; font-size:0.95rem; margin:0.6rem 0;
 }
 .metric-row { display:flex; gap:0.4rem; margin:0.5rem 0; }
-.metric-box { flex:1; background:white; border-radius:8px; padding:8px 10px; text-align:center; }
+.metric-box {
+    flex:1; background:white; border-radius:8px;
+    padding:8px 10px; text-align:center;
+}
 .metric-val { font-size:1.1rem; font-weight:700; color:#1a2e4a; }
 .metric-lbl { font-size:0.7rem; color:#6c7a8d; margin-top:2px; }
 
@@ -80,11 +114,6 @@ h1,h2,h3,h4 { font-family:'Inter',sans-serif !important; color:#1a2e4a; font-wei
 .stNumberInput > div > div > input {
     border-radius:8px !important; border:1px solid #c8dff0 !important;
     font-family:'Inter',sans-serif !important;
-}
-
-/* Make map fill full height with no gap */
-[data-testid="stVerticalBlock"] iframe {
-    display:block;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -179,7 +208,7 @@ if st.session_state.page == 'landing':
 
     st.markdown("""
     <div class="l-card">
-        <div class="mrow"><span class="mlbl">Course</span>DSC 148 — Introduction to Data Mining</div>
+        <div class="mrow"><span class="mlbl">Class</span>DSC 148 - Introduction to Data Mining</div>
         <div class="mrow"><span class="mlbl">By</span>Vanshika Somani</div>
         <div class="mrow"><span class="mlbl">Model</span>XGBoost &nbsp;|&nbsp; Accuracy: 99.9% &nbsp;|&nbsp; AUC-ROC: 1.000</div>
         <div class="mrow"><span class="mlbl">Dataset</span>7,872 San Diego grid points across 4 data sources</div>
@@ -196,10 +225,14 @@ if st.session_state.page == 'landing':
         and geographic context. Enter any address or click the map to get an instant safety
         prediction with feature-level explanations.
         <br><br>
-        <b>Data Sources:</b>&nbsp; SDPD Calls for Service (2023) &nbsp;·&nbsp;
-        EPA National Walkability Index &nbsp;·&nbsp;
-        City of San Diego Streetlights &nbsp;·&nbsp;
-        Census TIGER Block Groups
+        <b>Data Sources:</b>&nbsp;
+        <a class="l-link" href="https://data.sandiego.gov/datasets/police-calls-for-service/" target="_blank">SDPD Calls for Service (2023)</a>
+        &nbsp;·&nbsp;
+        <a class="l-link" href="https://www.epa.gov/smartgrowth/smart-location-mapping" target="_blank">EPA National Walkability Index</a>
+        &nbsp;·&nbsp;
+        <a class="l-link" href="https://data.sandiego.gov/datasets/streetlights/" target="_blank">City of San Diego Streetlights</a>
+        &nbsp;·&nbsp;
+        <a class="l-link" href="https://www2.census.gov/geo/tiger/TIGER2020/BG/tl_2020_06_bg.zip" target="_blank">Census TIGER Block Groups</a>
     </div>
     """, unsafe_allow_html=True)
 
@@ -215,7 +248,15 @@ else:
     left, right = st.columns([4, 6], gap="small")
 
     with left:
-        st.markdown('<div class="panel-wrap">', unsafe_allow_html=True)
+        st.markdown("""
+        <style>
+        div[data-testid="column"]:first-child > div > div > div {
+        background: #ddeeff;
+        border-radius: 12px;
+        padding: 0.5rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
 
         hc1, hc2 = st.columns([3, 1])
         with hc1:
@@ -228,6 +269,7 @@ else:
 
         st.markdown('<hr class="divider">', unsafe_allow_html=True)
 
+        st.markdown('<div style="font-size:1.00rem;color:#6c7a8d;margin:0.4rem 0 0.2rem 0;">Type out a location</div>', unsafe_allow_html=True)
         address = st.text_input("addr", label_visibility="collapsed",
                                 placeholder="Search address or neighborhood...")
 
@@ -244,12 +286,13 @@ else:
             else:
                 st.warning("Address not found.")
 
+        st.markdown('<div style="font-size:1.00rem;color:#6c7a8d;margin:0.4rem 0 0.2rem 0;">Click a location on the map or enter coordinates manually</div>', unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
-            lat_in = st.number_input("Lat", value=float(st.session_state.mlat),
+            lat_in = st.number_input("Latitude", value=float(st.session_state.mlat),
                                      min_value=32.5, max_value=33.2, step=0.001, format="%.4f")
         with c2:
-            lon_in = st.number_input("Lon", value=float(st.session_state.mlon),
+            lon_in = st.number_input("Longitude", value=float(st.session_state.mlon),
                                      min_value=-117.5, max_value=-116.9, step=0.001, format="%.4f")
 
         final_lat = geo_lat if geo_lat else lat_in
@@ -301,17 +344,13 @@ else:
             st.bar_chart(imp.set_index('Feature')['SHAP Weight'], height=150)
             st.markdown(f'<div style="font-size:0.78rem;color:#6c7a8d;">Location: ({r["lat"]:.4f}, {r["lon"]:.4f})</div>', unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
     with right:
-        # Build map — don't rerun on click to preserve user zoom/pan
         m = folium.Map(
             location=[st.session_state.mlat, st.session_state.mlon],
             zoom_start=12,
             tiles='CartoDB positron'
         )
 
-        # Selected location marker
         folium.CircleMarker(
             location=[st.session_state.mlat, st.session_state.mlon],
             radius=10,
@@ -322,7 +361,6 @@ else:
             popup=f"({st.session_state.mlat:.4f}, {st.session_state.mlon:.4f})"
         ).add_to(m)
 
-        # Result marker
         if st.session_state.result:
             r = st.session_state.result
             color = '#28a745' if r['pred'] == 1 else '#dc3545'
@@ -344,7 +382,6 @@ else:
             returned_objects=["last_clicked"]
         )
 
-        # Read click — update coords without rerun so map keeps its position
         if map_data and map_data.get('last_clicked'):
             clat = round(map_data['last_clicked']['lat'], 4)
             clon = round(map_data['last_clicked']['lng'], 4)
