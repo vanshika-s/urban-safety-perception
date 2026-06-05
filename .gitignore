@@ -1,13 +1,17 @@
+# Raw data files (too large for GitHub)
 data/raw/
-data/processed/
 *.gpkg
-*.csv
 *.zip
-*.geojson
+
+# Python
 __pycache__/
 *.py[cod]
 .env
 venv/
 *.egg-info/
+
+# Jupyter
 .ipynb_checkpoints/
+
+# VS Code
 .vscode/
