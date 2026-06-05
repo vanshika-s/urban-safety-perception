@@ -9,7 +9,7 @@ By Vanshika Somani
 
 This project predicts whether a San Diego location is perceived as safe or unsafe using environmental features - EPA walkability scores, streetlight density, and geographic context. A machine learning model (XGBoost) is trained on a grid of 7,872 San Diego locations and deployed as an interactive web app.
 
-**Live demo:** [Launch App](https://github.com/vanshika-s/urban-safety-perception)
+**Live demo:** (https://urban-safety-perception.streamlit.app/)
 
 ---
 
