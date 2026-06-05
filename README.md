@@ -1,13 +1,13 @@
 # Urban Safety Perception - San Diego
 
-**DSC 148 - Introduction to Data Mining | UC San Diego**
+**DSC 148 - Introduction to Data Mining**
 By Vanshika Somani
 
 ---
 
 ## Overview
 
-This project predicts whether a San Diego location is perceived as safe or unsafe using environmental features - EPA walkability scores, streetlight density, and geographic context. A machine learning model (XGBoost) is trained on a grid of 7,872 San Diego locations and deployed as an interactive web app.
+This project predicts whether a San Diego location is safe or unsafe using environmental features like EPA walkability scores, streetlight density, and geographic context. A machine learning model (XGBoost) is trained on a grid of 7,872 San Diego locations and deployed as an interactive web app.
 
 **Live demo:** (https://urban-safety-perception.streamlit.app/)
 
@@ -111,7 +111,7 @@ Place these in `data/raw/` before running notebooks:
 
 ## Report
 
-[View Report PDF](#) - link to be added after submission
+[View Report PDF](#) - link to be added
 
 ---
 
