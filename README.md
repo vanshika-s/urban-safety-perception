@@ -15,7 +15,7 @@ This project predicts whether a San Diego location is safe or unsafe using envir
 
 ## Research Question
 
-> Can machine learning predict the perceived safety of a San Diego location using publicly available environmental data?
+Can machine learning predict the perceived safety of a San Diego location using publicly available environmental data?
 
 ---
 
