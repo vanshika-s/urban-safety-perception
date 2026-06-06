@@ -281,10 +281,17 @@ else:
                         columns=['walk_score', 'light_score', 'lat', 'lon'])
                     pred = int(model.predict(X_pred)[0])
                     prob = float(model.predict_proba(X_pred)[0][1])
+                    
+                    # Continuous safety score rescaled to 0-100
+                    safety_score = 0.50 * 0.910 + 0.25 * walk_score + 0.25 * light_score
+                    safety_pct = int((safety_score - 0.45) / (0.80 - 0.45) * 100)
+                    safety_pct = max(0, min(100, safety_pct))
+
                     st.session_state.result = dict(
                         pred=pred, prob=prob, walk=walk_score,
                         light=light_score, lights=light_count,
-                        lat=final_lat, lon=final_lon, dist=dist_m)
+                        lat=final_lat, lon=final_lon, dist=dist_m,
+                        safety_pct=safety_pct)
                     st.session_state.mlat = final_lat
                     st.session_state.mlon = final_lon
 
@@ -296,6 +303,8 @@ else:
                 st.markdown(f'<div class="result-safe">SAFE &nbsp; Confidence: {r["prob"]:.1%}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="result-unsafe">UNSAFE &nbsp; Confidence: {1-r["prob"]:.1%}</div>', unsafe_allow_html=True)
+                
+            st.markdown(f'<div style="font-size:1.8rem;font-weight:700;color:#1a2e4a;margin:0.3rem 0;">Safety Score: {r["safety_pct"]}/100</div>', unsafe_allow_html=True)
 
             st.markdown("**Score Breakdown**")
             st.markdown(f"""
