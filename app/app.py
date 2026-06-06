@@ -240,6 +240,7 @@ else:
 
         st.markdown('<hr class="divider">', unsafe_allow_html=True)
 
+        st.markdown('<div style="font-size:0.82rem;color:#6c7a8d;margin-bottom:0.2rem;">Search by location name</div>', unsafe_allow_html=True)
         address = st.text_input("addr", label_visibility="collapsed",
                                 placeholder="Search address or neighborhood...")
 
@@ -260,10 +261,10 @@ else:
 
         c1, c2 = st.columns(2)
         with c1:
-            lat_in = st.number_input("Lat", value=float(st.session_state.mlat),
+            lat_in = st.number_input("Latitude", value=float(st.session_state.mlat),
                                      min_value=32.5, max_value=33.2, step=0.001, format="%.4f")
         with c2:
-            lon_in = st.number_input("Lon", value=float(st.session_state.mlon),
+            lon_in = st.number_input("Longitude", value=float(st.session_state.mlon),
                                      min_value=-117.5, max_value=-116.9, step=0.001, format="%.4f")
 
         final_lat = geo_lat if geo_lat else lat_in
@@ -312,7 +313,7 @@ else:
                 <div class="metric-box"><div class="metric-val">{r['walk']:.3f}</div><div class="metric-lbl">Walkability</div></div>
                 <div class="metric-box"><div class="metric-val">{r['light']:.3f}</div><div class="metric-lbl">Lighting</div></div>
                 <div class="metric-box"><div class="metric-val">{r['lights']}</div><div class="metric-lbl">Streetlights</div></div>
-                <div class="metric-box"><div class="metric-val">{r['prob']:.1%}</div><div class="metric-lbl">Safety Prob</div></div>
+                <div class="metric-box"><div class="metric-val">{r['safety_pct']}/100</div><div class="metric-lbl">Safety Score</div></div>
             </div>
             """, unsafe_allow_html=True)
 
