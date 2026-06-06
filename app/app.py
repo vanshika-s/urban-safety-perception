@@ -300,13 +300,22 @@ else:
 
         if st.session_state.result:
             r = st.session_state.result
-            if r['pred'] == 1:
-                st.markdown(f'<div class="result-safe">SAFE &nbsp; Confidence: {r["prob"]:.1%}</div>', unsafe_allow_html=True)
+            score = r['safety_pct']
+            if score >= 65:
+                color, label = '#28a745', 'Higher Safety'
+            elif score >= 45:
+                color, label = '#fd7e14', 'Moderate Safety'
             else:
-                st.markdown(f'<div class="result-unsafe">UNSAFE &nbsp; Confidence: {1-r["prob"]:.1%}</div>', unsafe_allow_html=True)
-                
-            st.markdown(f'<div style="font-size:1.8rem;font-weight:700;color:#1a2e4a;margin:0.3rem 0;">Safety Score: {r["safety_pct"]}/100</div>', unsafe_allow_html=True)
+                color, label = '#dc3545', 'Lower Safety'
 
+            st.markdown(f'''
+            <div style="background:{color}20;border-left:4px solid {color};border-radius:8px;
+            padding:12px 14px;margin:0.6rem 0;">
+            <span style="font-weight:700;color:{color};font-size:1.4rem;">{score}/100</span>
+            <span style="color:{color};font-weight:600;margin-left:10px;">{label}</span>
+            </div>
+            ''', unsafe_allow_html=True)
+            
             st.markdown("**Score Breakdown**")
             st.markdown(f"""
             <div class="metric-row">
