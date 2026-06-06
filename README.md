@@ -23,10 +23,10 @@ Can machine learning predict the perceived safety of a San Diego location using 
 
 | Dataset | Source | Size |
 |---|---|---|
-| SDPD Calls for Service (2023) | [San Diego Open Data](https://data.sandiego.gov/datasets/police-calls-for-service/) | 463k incidents |
-| EPA National Walkability Index | [EPA Smart Location Mapping](https://www.epa.gov/smartgrowth/smart-location-mapping) | 3,443 SD block groups |
+| SDPD Calls for Service (2024) | [San Diego Open Data](https://seshat.datasd.org/police_calls_for_service/pd_calls_for_service_2024_datasd.csv) | 970k incidents |
+| EPA National Walkability Index | [Kaggle — stacey06/u-s-walkability-index](https://www.kaggle.com/datasets/stacey06/u-s-walkability-index) | 3,443 SD block groups |
 | SD Streetlight Locations | [SD ArcGIS REST API](https://webmaps.sandiego.gov/) | 56,058 lights |
-| Census TIGER Block Groups (CA) | [Census Bureau](https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html) | CA block groups |
+| Census TIGER Block Groups (CA) | [Census Bureau](https://www2.census.gov/geo/tiger/TIGER2020/BG/tl_2020_06_bg.zip) | CA block groups |
 
 ---
 
