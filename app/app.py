@@ -315,14 +315,13 @@ else:
             <span style="color:{color};font-weight:600;margin-left:10px;">{label}</span>
             </div>
             ''', unsafe_allow_html=True)
-            
+
             st.markdown("**Score Breakdown**")
             st.markdown(f"""
             <div class="metric-row">
                 <div class="metric-box"><div class="metric-val">{r['walk']:.3f}</div><div class="metric-lbl">Walkability</div></div>
                 <div class="metric-box"><div class="metric-val">{r['light']:.3f}</div><div class="metric-lbl">Lighting</div></div>
                 <div class="metric-box"><div class="metric-val">{r['lights']}</div><div class="metric-lbl">Streetlights</div></div>
-                <div class="metric-box"><div class="metric-val">{r['safety_pct']}/100</div><div class="metric-lbl">Safety Score</div></div>
             </div>
             """, unsafe_allow_html=True)
 
