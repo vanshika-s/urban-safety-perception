@@ -7,9 +7,8 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 
-import geopandas as gpd
-from shapely.geometry import Point
 from xgboost import XGBClassifier
+from sklearn.neighbors import BallTree
 import requests
 
 st.set_page_config(
@@ -27,8 +26,6 @@ html, body, [class*="css"], p, div, span, label, input {
 .stApp { background-color: #ffffff; }
 h1,h2,h3,h4 { font-family:'Inter',sans-serif !important; color:#1a2e4a; font-weight:600; }
 #MainMenu {visibility:hidden;} footer {visibility:hidden;} header {visibility:hidden;}
-
-/* Remove ALL box artifacts */
 .block-container {
     padding-top: 0.8rem !important;
     padding-left: 1rem !important;
@@ -42,15 +39,6 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-}
-section.main > div { background: transparent !important; }
-/* Fix left column background */
-[data-testid="stVerticalBlock"] > [data-testid="stVerticalBlockBorderWrapper"] > div {
-    background: transparent !important;
-}
-div[class*="stColumn"] > div {
-    background: transparent !important;
-    border: none !important;
 }
 
 /* Landing */
@@ -74,10 +62,6 @@ div[class*="stColumn"] > div {
 }
 
 /* Left panel */
-.panel-wrap {
-    background:#ddeeff; border-radius:12px;
-    padding:1.2rem; min-height:600px;
-}
 .panel-title { font-size:1.6rem; font-weight:700; color:#1a2e4a; margin-bottom:0; }
 .divider { border:none; border-top:1px solid #c8dff0; margin:0.8rem 0; }
 .result-safe {
@@ -90,7 +74,7 @@ div[class*="stColumn"] > div {
 }
 .metric-row { display:flex; gap:0.4rem; margin:0.5rem 0; }
 .metric-box {
-    flex:1; background:white; border-radius:8px;
+    flex:1; background:#ddeeff; border-radius:8px;
     padding:8px 10px; text-align:center;
 }
 .metric-val { font-size:1.1rem; font-weight:700; color:#1a2e4a; }
@@ -118,9 +102,9 @@ div[class*="stColumn"] > div {
 </style>
 """, unsafe_allow_html=True)
 
+# ── Paths ─────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent.parent
 PROCESSED = ROOT / 'data' / 'processed'
-RAW = ROOT / 'data' / 'raw'
 
 SD_LAT_MIN, SD_LAT_MAX = 32.53, 33.11
 SD_LON_MIN, SD_LON_MAX = -117.30, -116.08
@@ -142,6 +126,7 @@ def geocode_address(address):
         pass
     return None, None
 
+# ── Data loaders — only need processed CSV ────────────────────────────────────
 @st.cache_data
 def load_modeling_df():
     return pd.read_csv(PROCESSED / 'modeling_df.csv')
@@ -154,44 +139,35 @@ def train_model(df):
     model.fit(X, y)
     return model
 
-@st.cache_data
-def load_census_walk():
-    shp = list((RAW / 'census_bg').glob('*.shp'))[0]
-    census = gpd.read_file(shp)
-    census_sd = census[census['COUNTYFP'] == '073'].copy().to_crs('EPSG:4326')
-    walk = pd.read_csv(RAW / 'walkability.csv', low_memory=False)
-    walk_sd = walk[walk['COUNTYFP'] == 73].copy()
-    walk_sd['GEOID_fixed'] = (
-        '06' + walk_sd['COUNTYFP'].astype(str).str.zfill(3) +
-        walk_sd['TRACTCE'].astype(str).str.zfill(6) +
-        walk_sd['BLKGRPCE'].astype(str).str.zfill(1)
+@st.cache_resource
+def build_balltree(df):
+    """Build spatial index for nearest-neighbor feature lookup."""
+    coords = np.radians(df[['lat', 'lon']].values)
+    tree = BallTree(coords, metric='haversine')
+    return tree
+
+def get_features_from_grid(lat, lon, df, tree):
+    """Find nearest grid point and return its features."""
+    point = np.radians([[lat, lon]])
+    dist, idx = tree.query(point, k=1)
+    dist_m = dist[0][0] * 6371000  # convert radians to meters
+    nearest = df.iloc[idx[0][0]]
+    return (
+        float(nearest['walk_score']),
+        float(nearest['light_score']),
+        int(nearest['light_count']),
+        float(dist_m)
     )
-    walk_sd['walk_score'] = (
-        walk_sd['NatWalkInd'] - walk_sd['NatWalkInd'].min()
-    ) / (walk_sd['NatWalkInd'].max() - walk_sd['NatWalkInd'].min())
-    census_sd['GEOID'] = census_sd['GEOID'].astype(str)
-    return census_sd.merge(walk_sd[['GEOID_fixed', 'walk_score']],
-                           left_on='GEOID', right_on='GEOID_fixed', how='left')
 
-@st.cache_data
-def load_lights():
-    return gpd.read_file(RAW / 'streetlights_full.geojson').to_crs('EPSG:32611')
-
-def get_features(lat, lon, census_walk, lights_proj):
-    pt = gpd.GeoDataFrame({'geometry': [Point(lon, lat)]}, crs='EPSG:4326')
-    joined = gpd.sjoin(pt, census_walk[['geometry', 'walk_score']],
-                       how='left', predicate='within')
-    walk_score = (float(joined['walk_score'].iloc[0])
-                  if not joined['walk_score'].isna().iloc[0] else 0.35)
-    pt_proj = pt.to_crs('EPSG:32611')
-    buf = pt_proj.geometry.iloc[0].buffer(200)
-    light_count = int(lights_proj.geometry.within(buf).sum())
-    light_score = min(light_count / 180, 1.0)
-    return walk_score, light_score, light_count
-
+# ── Session state ─────────────────────────────────────────────────────────────
 for k, v in [('page','landing'), ('mlat', 32.7157), ('mlon', -117.1611), ('result', None)]:
     if k not in st.session_state:
         st.session_state[k] = v
+
+# ── Load everything ───────────────────────────────────────────────────────────
+df = load_modeling_df()
+model = train_model(df)
+tree = build_balltree(df)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # LANDING PAGE
@@ -208,7 +184,7 @@ if st.session_state.page == 'landing':
 
     st.markdown("""
     <div class="l-card">
-        <div class="mrow"><span class="mlbl">Class</span>DSC 148 - Introduction to Data Mining</div>
+        <div class="mrow"><span class="mlbl">Course</span>DSC 148 — Introduction to Data Mining</div>
         <div class="mrow"><span class="mlbl">By</span>Vanshika Somani</div>
         <div class="mrow"><span class="mlbl">Model</span>XGBoost &nbsp;|&nbsp; Accuracy: 99.9% &nbsp;|&nbsp; AUC-ROC: 1.000</div>
         <div class="mrow"><span class="mlbl">Dataset</span>7,872 San Diego grid points across 4 data sources</div>
@@ -226,11 +202,11 @@ if st.session_state.page == 'landing':
         prediction with feature-level explanations.
         <br><br>
         <b>Data Sources:</b>&nbsp;
-        <a class="l-link" href="https://data.sandiego.gov/datasets/police-calls-for-service/" target="_blank">SDPD Calls for Service (2023)</a>
+        <a class="l-link" href="https://data.sandiego.gov/datasets/police-calls-for-service/" target="_blank">SDPD Calls for Service (2024)</a>
         &nbsp;·&nbsp;
         <a class="l-link" href="https://www.epa.gov/smartgrowth/smart-location-mapping" target="_blank">EPA National Walkability Index</a>
         &nbsp;·&nbsp;
-        <a class="l-link" href="https://data.sandiego.gov/datasets/streetlights/" target="_blank">City of San Diego Streetlights</a>
+        City of San Diego Streetlights (ArcGIS REST API)
         &nbsp;·&nbsp;
         <a class="l-link" href="https://www2.census.gov/geo/tiger/TIGER2020/BG/tl_2020_06_bg.zip" target="_blank">Census TIGER Block Groups</a>
     </div>
@@ -240,20 +216,15 @@ if st.session_state.page == 'landing':
 # APP PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 else:
-    df = load_modeling_df()
-    model = train_model(df)
-    census_walk = load_census_walk()
-    lights_proj = load_lights()
-
     left, right = st.columns([4, 6], gap="small")
 
     with left:
         st.markdown("""
         <style>
         div[data-testid="column"]:first-child > div > div > div {
-        background: #ddeeff;
-        border-radius: 12px;
-        padding: 0.5rem;
+            background: #ddeeff;
+            border-radius: 12px;
+            padding: 0.8rem;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -269,7 +240,6 @@ else:
 
         st.markdown('<hr class="divider">', unsafe_allow_html=True)
 
-        st.markdown('<div style="font-size:1.00rem;color:#6c7a8d;margin:0.4rem 0 0.2rem 0;">Type out a location</div>', unsafe_allow_html=True)
         address = st.text_input("addr", label_visibility="collapsed",
                                 placeholder="Search address or neighborhood...")
 
@@ -286,13 +256,14 @@ else:
             else:
                 st.warning("Address not found.")
 
-        st.markdown('<div style="font-size:1.00rem;color:#6c7a8d;margin:0.4rem 0 0.2rem 0;">Click a location on the map or enter coordinates manually</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:0.82rem;color:#6c7a8d;margin:0.4rem 0 0.2rem 0;">Click a location on the map or enter coordinates manually</div>', unsafe_allow_html=True)
+
         c1, c2 = st.columns(2)
         with c1:
-            lat_in = st.number_input("Latitude", value=float(st.session_state.mlat),
+            lat_in = st.number_input("Lat", value=float(st.session_state.mlat),
                                      min_value=32.5, max_value=33.2, step=0.001, format="%.4f")
         with c2:
-            lon_in = st.number_input("Longitude", value=float(st.session_state.mlon),
+            lon_in = st.number_input("Lon", value=float(st.session_state.mlon),
                                      min_value=-117.5, max_value=-116.9, step=0.001, format="%.4f")
 
         final_lat = geo_lat if geo_lat else lat_in
@@ -303,8 +274,8 @@ else:
                 st.error("Location is outside San Diego County.")
             else:
                 with st.spinner("Computing..."):
-                    walk_score, light_score, light_count = get_features(
-                        final_lat, final_lon, census_walk, lights_proj)
+                    walk_score, light_score, light_count, dist_m = get_features_from_grid(
+                        final_lat, final_lon, df, tree)
                     X_pred = pd.DataFrame(
                         [[walk_score, light_score, final_lat, final_lon]],
                         columns=['walk_score', 'light_score', 'lat', 'lon'])
@@ -313,7 +284,7 @@ else:
                     st.session_state.result = dict(
                         pred=pred, prob=prob, walk=walk_score,
                         light=light_score, lights=light_count,
-                        lat=final_lat, lon=final_lon)
+                        lat=final_lat, lon=final_lon, dist=dist_m)
                     st.session_state.mlat = final_lat
                     st.session_state.mlon = final_lon
 
@@ -335,6 +306,8 @@ else:
                 <div class="metric-box"><div class="metric-val">{r['prob']:.1%}</div><div class="metric-lbl">Safety Prob</div></div>
             </div>
             """, unsafe_allow_html=True)
+
+            st.markdown(f'<div style="font-size:0.75rem;color:#6c7a8d;margin-top:0.3rem;">Nearest grid point: {r["dist"]:.0f}m away</div>', unsafe_allow_html=True)
 
             st.markdown("**Feature Importance**")
             imp = pd.DataFrame({
