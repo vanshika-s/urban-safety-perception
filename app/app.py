@@ -184,7 +184,7 @@ if st.session_state.page == 'landing':
 
     st.markdown("""
     <div class="l-card">
-        <div class="mrow"><span class="mlbl">Course</span>DSC 148 — Introduction to Data Mining</div>
+        <div class="mrow"><span class="mlbl">Course</span>DSC 148 - Introduction to Data Mining</div>
         <div class="mrow"><span class="mlbl">By</span>Vanshika Somani</div>
         <div class="mrow"><span class="mlbl">Model</span>XGBoost &nbsp;|&nbsp; Accuracy: 99.9% &nbsp;|&nbsp; AUC-ROC: 1.000</div>
         <div class="mrow"><span class="mlbl">Dataset</span>7,872 San Diego grid points across 4 data sources</div>
@@ -202,13 +202,13 @@ if st.session_state.page == 'landing':
         prediction with feature-level explanations.
         <br><br>
         <b>Data Sources:</b>&nbsp;
-        <a class="l-link" href="https://data.sandiego.gov/datasets/police-calls-for-service/" target="_blank">SDPD Calls for Service (2024)</a>
+        SDPD Calls for Service (2024)
         &nbsp;·&nbsp;
-        <a class="l-link" href="https://www.epa.gov/smartgrowth/smart-location-mapping" target="_blank">EPA National Walkability Index</a>
+        EPA National Walkability Index
         &nbsp;·&nbsp;
         City of San Diego Streetlights (ArcGIS REST API)
         &nbsp;·&nbsp;
-        <a class="l-link" href="https://www2.census.gov/geo/tiger/TIGER2020/BG/tl_2020_06_bg.zip" target="_blank">Census TIGER Block Groups</a>
+        Census TIGER Block Groups
     </div>
     """, unsafe_allow_html=True)
 
