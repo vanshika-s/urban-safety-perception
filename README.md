@@ -21,8 +21,8 @@ Can machine learning predict the perceived safety of a San Diego location using 
 
 ## Data Sources
 
-| Dataset | Source | Size |
-|---|---|---|
+| Dataset | Size |
+|---|---|
 | SDPD Calls for Service (2024) | 970,650 incidents |
 | EPA National Walkability Index | 3,443 SD block groups |
 | SD Streetlight Locations | 56,058 lights |
