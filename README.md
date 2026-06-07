@@ -109,12 +109,6 @@ Place these in `data/raw/` before running notebooks:
 
 ---
 
-## Report
-
-[View Report PDF](#) - link to be added
-
----
-
 ## Acknowledgements
 
 - SafePath (DS3 @ UCSD) - scoring formula inspiration
