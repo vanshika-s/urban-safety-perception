@@ -133,7 +133,7 @@ def load_modeling_df():
 
 @st.cache_resource
 def train_model(df):
-    X = df[['walk_score', 'light_score', 'lat', 'lon']]
+    X = df[['walk_score', 'light_score', 'crime_score', 'lat', 'lon']]
     y = df['safe_label']
     model = XGBClassifier(n_estimators=100, random_state=42, eval_metric='logloss')
     model.fit(X, y)
@@ -147,16 +147,16 @@ def build_balltree(df):
     return tree
 
 def get_features_from_grid(lat, lon, df, tree):
-    """Find nearest grid point and return its features."""
     point = np.radians([[lat, lon]])
     dist, idx = tree.query(point, k=1)
-    dist_m = dist[0][0] * 6371000  # convert radians to meters
+    dist_m = dist[0][0] * 6371000
     nearest = df.iloc[idx[0][0]]
     return (
         float(nearest['walk_score']),
         float(nearest['light_score']),
         int(nearest['light_count']),
-        float(dist_m)
+        float(dist_m),
+        float(nearest['crime_score'])
     )
 
 # ── Session state ─────────────────────────────────────────────────────────────
@@ -186,7 +186,7 @@ if st.session_state.page == 'landing':
     <div class="l-card">
         <div class="mrow"><span class="mlbl">Course</span>DSC 148 - Introduction to Data Mining</div>
         <div class="mrow"><span class="mlbl">By</span>Vanshika Somani</div>
-        <div class="mrow"><span class="mlbl">Model</span>XGBoost &nbsp;|&nbsp; Accuracy: 99.9% &nbsp;|&nbsp; AUC-ROC: 1.000</div>
+        <div class="mrow"><span class="mlbl">Model</span>XGBoost &nbsp;|&nbsp; Accuracy: 99.6% &nbsp;|&nbsp; AUC-ROC: 1.000</div>
         <div class="mrow"><span class="mlbl">Dataset</span>7,872 San Diego grid points across 4 data sources</div>
         <div class="mrow"><span class="mlbl">GitHub</span>
             <a class="l-link" href="https://github.com/vanshika-s/urban-safety-perception" target="_blank">vanshika-s/urban-safety-perception</a>
@@ -198,8 +198,8 @@ if st.session_state.page == 'landing':
     <div class="l-about">
         This project predicts whether a San Diego location is perceived as safe or unsafe
         using environmental features: EPA walkability scores, streetlight density (56,000+ lights),
-        and geographic context. Enter any address or click the map to get an instant safety
-        prediction with feature-level explanations.
+        SDPD crime density, and geographic context. Enter any address or click the map to get
+        an instant safety prediction with feature-level explanations.
         <br><br>
         <b>Data Sources:</b>&nbsp;
         SDPD Calls for Service (2024)
@@ -275,22 +275,23 @@ else:
                 st.error("Location is outside San Diego County.")
             else:
                 with st.spinner("Computing..."):
-                    walk_score, light_score, light_count, dist_m = get_features_from_grid(
+                    walk_score, light_score, light_count, dist_m, crime_score = get_features_from_grid(
                         final_lat, final_lon, df, tree)
                     X_pred = pd.DataFrame(
-                        [[walk_score, light_score, final_lat, final_lon]],
-                        columns=['walk_score', 'light_score', 'lat', 'lon'])
+                        [[walk_score, light_score, crime_score, final_lat, final_lon]],
+                        columns=['walk_score', 'light_score', 'crime_score', 'lat', 'lon'])
                     pred = int(model.predict(X_pred)[0])
                     prob = float(model.predict_proba(X_pred)[0][1])
-                    
+
                     # Continuous safety score rescaled to 0-100
-                    safety_score = 0.50 * 0.910 + 0.25 * walk_score + 0.25 * light_score
+                    safety_score = 0.50 * crime_score + 0.25 * walk_score + 0.25 * light_score
                     safety_pct = int((safety_score - 0.45) / (0.80 - 0.45) * 100)
                     safety_pct = max(0, min(100, safety_pct))
 
                     st.session_state.result = dict(
                         pred=pred, prob=prob, walk=walk_score,
                         light=light_score, lights=light_count,
+                        crime=crime_score,
                         lat=final_lat, lon=final_lon, dist=dist_m,
                         safety_pct=safety_pct)
                     st.session_state.mlat = final_lat
@@ -320,6 +321,7 @@ else:
             st.markdown(f"""
             <div class="metric-row">
                 <div class="metric-box"><div class="metric-val">{r['walk']:.3f}</div><div class="metric-lbl">Walkability</div></div>
+                <div class="metric-box"><div class="metric-val">{r['crime']:.3f}</div><div class="metric-lbl">Crime Safety</div></div>
                 <div class="metric-box"><div class="metric-val">{r['light']:.3f}</div><div class="metric-lbl">Lighting</div></div>
                 <div class="metric-box"><div class="metric-val">{r['lights']}</div><div class="metric-lbl">Streetlights</div></div>
             </div>
@@ -327,10 +329,10 @@ else:
 
             st.markdown(f'<div style="font-size:0.75rem;color:#6c7a8d;margin-top:0.3rem;">Nearest grid point: {r["dist"]:.0f}m away</div>', unsafe_allow_html=True)
 
-            st.markdown("**Feature Importance**")
+            st.markdown("**Feature Importance (SHAP)**")
             imp = pd.DataFrame({
-                'Feature': ['Walkability', 'Lighting', 'Longitude', 'Latitude'],
-                'SHAP Weight': [0.70, 0.21, 0.05, 0.04]
+                'Feature': ['Walkability', 'Crime Safety', 'Lighting', 'Longitude', 'Latitude'],
+                'SHAP Weight': [0.45, 0.43, 0.08, 0.03, 0.01]
             })
             st.bar_chart(imp.set_index('Feature')['SHAP Weight'], height=150)
             st.markdown(f'<div style="font-size:0.78rem;color:#6c7a8d;">Location: ({r["lat"]:.4f}, {r["lon"]:.4f})</div>', unsafe_allow_html=True)
